@@ -2,15 +2,18 @@ package postgres
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"strconv"
+	"time"
 	"todo/models"
 )
 
 type User struct {
-	gorm.Model
-	Username string `gorm:"unique;not null"`
-	Password string `gorm:"not null"`
+	ID        uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primarykey"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	Username  string `gorm:"unique;not null"`
+	Password  string `gorm:"not null"`
 }
 
 type UserRepository struct {
@@ -30,7 +33,7 @@ func (r UserRepository) CreateUser(ctx context.Context, user *models.User) error
 		return err
 	}
 
-	user.ID = strconv.Itoa(int(model.ID))
+	user.ID = model.ID.String()
 	return nil
 }
 
@@ -55,7 +58,7 @@ func toPostgresUser(u *models.User) *User {
 func toModel(u *User) *models.User {
 
 	return &models.User{
-		ID:       strconv.Itoa(int(u.ID)),
+		ID:       u.ID.String(),
 		Username: u.Username,
 		Password: u.Password,
 	}
