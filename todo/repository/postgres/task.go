@@ -22,22 +22,22 @@ type TaskRepository struct {
 	db *gorm.DB
 }
 
-func NewTaskRepository(db *gorm.DB) *TaskRepository {
+func NewTodoRepository(db *gorm.DB) *TaskRepository {
 	return &TaskRepository{db: db}
 }
 
-func (r TaskRepository) GetTasks(ctx context.Context, user *models.User) ([]*models.Task, error) {
+func (r TaskRepository) GetTasks(_ context.Context, user *models.User) ([]*models.Task, error) {
 	userId := user.ID
 
 	out := make([]*Task, 0)
-	err := r.db.Find(&out, "userID = ?", userId).Error
+	err := r.db.Find(&out, "user_id = ?", userId).Error
 	if err != nil {
 		return nil, err
 	}
 	return toTasks(out), nil
 }
 
-func (r TaskRepository) CreateTask(ctx context.Context, task *models.Task) error {
+func (r TaskRepository) CreateTask(_ context.Context, task *models.Task) error {
 	model := toPostgresUser(task)
 	err := r.db.Create(&model).Error
 	if err != nil {
@@ -48,16 +48,16 @@ func (r TaskRepository) CreateTask(ctx context.Context, task *models.Task) error
 	return nil
 }
 
-func (r TaskRepository) DeleteTask(ctx context.Context, id string) error {
+func (r TaskRepository) DeleteTask(_ context.Context, id string, user *models.User) error {
 	task := new(Task)
-	if err := r.db.Delete(&task, id).Error; err != nil {
+	if err := r.db.Delete(&task, "id = ? AND user_id = ?", id, user.ID).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r TaskRepository) ChangeStatus(ctx context.Context, id string, isComplete bool) error {
-	if err := r.db.Model(&Task{}).Where("id = ?", id).Update("is_complete", isComplete).Error; err != nil {
+func (r TaskRepository) ChangeStatus(_ context.Context, id string, isComplete bool, user *models.User) error {
+	if err := r.db.Model(&Task{}).Where("id = ? AND user_id = ?", id, user.ID).Update("is_complete", isComplete).Error; err != nil {
 		return err
 	}
 	return nil

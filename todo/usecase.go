@@ -6,8 +6,8 @@ import (
 )
 
 type UseCase interface {
+	Create(ctx context.Context, title, description string, user *models.User) error
+	Delete(ctx context.Context, id string, user *models.User) error
 	Get(ctx context.Context, user *models.User) ([]*models.Task, error)
-	Create(ctx context.Context, user *models.User) error
-	Delete(ctx context.Context, user *models.User) error
-	ChangeStatus(ctx context.Context, user *models.User) error
+	ChangeStatus(ctx context.Context, id string, status bool, user *models.User) error
 }
