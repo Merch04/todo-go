@@ -16,24 +16,34 @@ import (
 	authhttp "todo/auth/delivery/http"
 	authpostgres "todo/auth/repository/postgres"
 	authusecase "todo/auth/usecase"
+	"todo/todo"
+	tdhttp "todo/todo/delivery/http"
+	todopostgres "todo/todo/repository/postgres"
+	todousecase "todo/todo/usecase"
 )
 
 type App struct {
 	httpServer *http.Server
 
 	authUC auth.UseCase
+	todoUC todo.UseCase
 }
 
 func NewApp() *App {
 	db := InitDB()
 
 	userRepo := authpostgres.NewUserRepository(db)
+	todoRepo := todopostgres.NewTodoRepository(db)
+
 	return &App{
 		authUC: authusecase.NewAuthUseCase(
 			userRepo,
 			viper.GetString("auth.hash_salt"),
 			[]byte(viper.GetString("auth.singing_key")),
 			viper.GetDuration("auth.token_ttl"),
+		),
+		todoUC: todousecase.NewTodoUseCase(
+			todoRepo,
 		),
 	}
 
@@ -45,8 +55,10 @@ func (a *App) Run(port string) error {
 
 	authhttp.RegisterHTTPEndpoints(router, a.authUC)
 
-	//authMiddleware := authhttp.NewAuthMiddleware(a.authUC)
-	//api := router.Group("/api", authMiddleware)
+	authMiddleware := authhttp.NewAuthMiddleware(a.authUC)
+	api := router.Group("/api", authMiddleware)
+
+	tdhttp.RegisterHTTPEndpoints(api, a.todoUC)
 
 	a.httpServer = &http.Server{
 		Addr:           ":" + port,
@@ -88,7 +100,7 @@ func InitDB() *gorm.DB {
 		log.Fatalf("Error to connect to database: %v", err)
 	}
 
-	err = db.AutoMigrate(&authpostgres.User{})
+	err = db.AutoMigrate(&authpostgres.User{}, &todopostgres.Task{})
 	if err != nil {
 		log.Fatalf("Error to migrate models: %v", err)
 	}
