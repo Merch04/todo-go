@@ -1,0 +1,5 @@
+# Игнорирование конфигурационного файла
+config/config.yaml
+
+# Игнорирование файлов IntelliJ IDEA (Goland)
+.idea/
